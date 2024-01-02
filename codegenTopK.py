@@ -80,12 +80,10 @@ def codeGenTopKLD(reduceList: list[LevelKReducePhase], enumerateList: list[Level
         outFile.write(line)
     
     # 2. enumerateList rewrite
-    if len(enumerateList):
-        outFile.write('\n-- Enumerate Phase: \n')
     for enum in enumerateList:
         outFile.write('\n-- Enumerate' + str(enum.levelKEnumPhaseId) + '\n')
         outFile.write('-- 0. rankView\n')
-        line = BEGIN + enum.rankView.finalView.viewName + AS + WITH + enum.rankView.maxView.viewName + AS + genWithView(enum.rankView.maxView) + MID
+        line = BEGIN_TABLE + enum.rankView.finalView.viewName + AS + WITH + enum.rankView.maxView.viewName + AS + genWithView(enum.rankView.maxView) + MID
         outFile.write(line)
         line = enum.rankView.truncateView.viewName + AS + genWithView(enum.rankView.truncateView) + WITHEND
         outFile.write(line)
@@ -190,33 +188,22 @@ def codeGenTopKPD(reduceList: list[ProductKReducePhase], enumerateList: list[Pro
     dropView = []
     
     # 1. reduceList rewrite
-    if len(reduceList):
-        outFile.write('\n-- Reduce Phase: \nwith\n')
+    outFile.write('with\n')
     for reduce in reduceList:
-        outFile.write('\n-- Reduce' + str(reduce.productKReducePhaseId) + '\n')
         if reduce.leafExtra:
-            outFile.write('-- 0. leafExtra\n')
             line = reduce.leafExtra.viewName + AS + genActionView(reduce.leafExtra) + MID
             outFile.write(line)
-        outFile.write('-- 1. aggMax\n')
         line = reduce.aggMax.viewName + AS + genActionView(reduce.aggMax) + ' group by ' + ','.join(reduce.groupBy) + MID
         outFile.write(line)
-        outFile.write('-- 2. joinRes\n')
         line = reduce.joinRes.viewName + AS + genWithView(reduce.joinRes) + MID
-        outFile.writable(line)
+        outFile.write(line)
     
     # 2. enumerateList rewrite
-    if len(enumerateList):
-        outFile.write('\n-- Enumerate Phase: \n')
     for index, enum in enumerate(enumerateList):
-        outFile.write('\n-- Enumerate' + str(enum.productKEnumPhaseId) + '\n')
-        outFile.write('-- 0. aggMax\n')
-        line = enum.aggMax.viewName + AS + genActionView(enum.aggMax) + ' group by ' + enum.groupBy + MID
+        line = enum.aggMax.viewName + AS + genActionView(enum.aggMax) + ' group by ' + ','.join(enum.groupBy) + MID
         outFile.write(line)
-        outFile.write('-- 1. pruneJoin\n')
         line = enum.pruneJoin.viewName + AS + genWithView(enum.pruneJoin) + MID
         outFile.write(line)
-        outFile.write('-- 2. joinRes\n')
         if index != len(enumerateList) - 1:
             line = enum.joinRes.viewName + AS + genWithView(enum.joinRes) + MID
         else:
@@ -224,12 +211,6 @@ def codeGenTopKPD(reduceList: list[ProductKReducePhase], enumerateList: list[Pro
         outFile.write(line)
     
     outFile.write(finalResult)
-    if len(dropView):
-        outFile.write('\n-- ')
-        for table in reversed(dropView):
-            line = 'drop view ' + table + ';'
-            outFile.write(line)
-    outFile.write(line)
     outFile.close()
     
 def codeGenTopKPM(reduceList: list[ProductKReducePhase], enumerateList: list[ProductKEnumPhase], finalResult: str, outPath: str):
