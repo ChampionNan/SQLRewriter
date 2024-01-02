@@ -1,0 +1,20 @@
+## Reduce Phase: 
+
+# Reduce0
+# 0. Prepare
+create or replace view tAux72 as select c as v4, d as v6 from T;
+# +. SemiJoin
+create or replace view semiJoinView7585992751581838034 as select v4, v6 from tAux72 where (v6, v4) in (select d, c from T AS t);
+
+# Reduce1
+# +. SemiJoin
+create or replace view semiJoinView7932954559980018739 as select b as v2, c as v4 from S AS s where (c) in (select v4 from semiJoinView7585992751581838034);
+
+# Reduce2
+# +. SemiJoin
+create or replace view semiJoinView2739688268949507733 as select a as v1, b as v2 from R AS r where (b) in (select v2 from semiJoinView7932954559980018739);
+
+## Enumerate Phase: 
+select count(distinct v9, v6, v1) from semiJoinView2739688268949507733;
+
+# drop view tAux72, semiJoinView7585992751581838034, semiJoinView7932954559980018739, semiJoinView2739688268949507733;

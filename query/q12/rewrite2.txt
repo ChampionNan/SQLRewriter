@@ -1,0 +1,62 @@
+## AggReduce Phase: 
+
+##Reduce Phase: 
+
+# Reduce6
+# 1. orderView
+create or replace view orderView3827221492947035858 as select src as v1, dst as v2, row_number() over (partition by dst order by src) as rn from Graph as g1;
+# 2. minView
+create or replace view minView1508132815572597906 as select v2, v1 as mfL1291698224988617776 from orderView3827221492947035858 where rn = 1;
+# 3. joinView
+create or replace view joinView9115094522261526634 as select src as v2, dst as v4, mfL1291698224988617776 from Graph AS g2, minView1508132815572597906 where g2.src=minView1508132815572597906.v2;
+
+# Reduce7
+# 1. orderView
+create or replace view orderView1361406908003924889 as select src as v6, dst as v8, row_number() over (partition by src order by dst DESC) as rn from Graph as g4;
+# 2. minView
+create or replace view minView1854128980887020026 as select v6, v8 as mfR8816663074685383728 from orderView1361406908003924889 where rn = 1;
+# 3. joinView
+create or replace view joinView7998721075718858034 as select src as v4, dst as v6, mfR8816663074685383728 from Graph AS g3, minView1854128980887020026 where g3.dst=minView1854128980887020026.v6;
+
+# Reduce8
+# 1. orderView
+create or replace view orderView839394650983709792 as select v4, v6, mfR8816663074685383728, row_number() over (partition by v4 order by mfR8816663074685383728 DESC) as rn from joinView7998721075718858034;
+# 2. minView
+create or replace view minView1034387264656409996 as select v4, mfR8816663074685383728 as mfR3516072957689038128 from orderView839394650983709792 where rn = 1;
+# 3. joinView
+create or replace view joinView3282233259429892419 as select v2, v4, mfL1291698224988617776, mfR3516072957689038128 from joinView9115094522261526634 join minView1034387264656409996 using(v4) where mfL1291698224988617776<mfR3516072957689038128;
+
+## Enumerate Phase: 
+
+# Enumerate6
+# 1. createSample
+create or replace view sample1948874290107442002 as select * from orderView839394650983709792 where rn % 100 = 1;
+# 2. selectMax
+create or replace view maxRn6304252393959325633 as select v4, max(rn) as mrn from joinView3282233259429892419 join sample1948874290107442002 using(v4) where mfL1291698224988617776<mfR8816663074685383728 group by v4;
+# 3. selectTarget
+create or replace view target7595050945515979438 as select v4, v6, mfR8816663074685383728 from orderView839394650983709792 join maxRn6304252393959325633 using(v4) where rn < mrn + 100;
+# 4. stageEnd
+create or replace view end3030856553823008141 as select v4, v2, v6, mfL1291698224988617776, mfR8816663074685383728 from joinView3282233259429892419 join target7595050945515979438 using(v4) where mfL1291698224988617776<mfR8816663074685383728;
+
+# Enumerate7
+# 1. createSample
+create or replace view sample6990671144176213975 as select * from orderView1361406908003924889 where rn % 100 = 1;
+# 2. selectMax
+create or replace view maxRn5531011487632220420 as select v6, max(rn) as mrn from end3030856553823008141 join sample6990671144176213975 using(v6) where mfL1291698224988617776<v8 group by v6;
+# 3. selectTarget
+create or replace view target9189349410806761174 as select v6, v8 from orderView1361406908003924889 join maxRn5531011487632220420 using(v6) where rn < mrn + 100;
+# 4. stageEnd
+create or replace view end1606417141672658830 as select v4, v2, v8, v6 from end3030856553823008141 join target9189349410806761174 using(v6) where mfL1291698224988617776<v8;
+
+# Enumerate8
+# 1. createSample
+create or replace view sample5825387648902893154 as select * from orderView3827221492947035858 where rn % 100 = 1;
+# 2. selectMax
+create or replace view maxRn2778614637001307480 as select v2, max(rn) as mrn from end1606417141672658830 join sample5825387648902893154 using(v2) where v1<v8 group by v2;
+# 3. selectTarget
+create or replace view target945344606945896551 as select v1, v2 from orderView3827221492947035858 join maxRn2778614637001307480 using(v2) where rn < mrn + 100;
+# 4. stageEnd
+create or replace view end1852528657240842118 as select v4, v2, v8, v6, v1 from end1606417141672658830 join target945344606945896551 using(v2) where v1<v8;
+select count(v1, v2, v4, v6, v8) from end1852528657240842118;
+
+# drop view orderView3827221492947035858, minView1508132815572597906, joinView9115094522261526634, orderView1361406908003924889, minView1854128980887020026, joinView7998721075718858034, orderView839394650983709792, minView1034387264656409996, joinView3282233259429892419, sample1948874290107442002, maxRn6304252393959325633, target7595050945515979438, end3030856553823008141, sample6990671144176213975, maxRn5531011487632220420, target9189349410806761174, end1606417141672658830, sample5825387648902893154, maxRn2778614637001307480, target945344606945896551, end1852528657240842118;

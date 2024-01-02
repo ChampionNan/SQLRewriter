@@ -1,0 +1,30 @@
+## Reduce Phase: 
+
+# Reduce0
+# 1. orderView
+create or replace view orderView2485709536741431835 as select src as v1, dst as v2, row_number() over (partition by dst order by src) as rn from Graph as g1;
+# 2. minView
+create or replace view minView4276238504734278961 as select v2, v1 as mfL8481172505586412300 from orderView2485709536741431835 where rn = 1;
+# 3. joinView
+create or replace view joinView633302664269827473 as select src as v2, dst as v4, mfL8481172505586412300 from Graph AS g2, minView4276238504734278961 where g2.src=minView4276238504734278961.v2;
+
+# Reduce1
+# 1. orderView
+create or replace view orderView4719054212559316021 as select src as v6, dst as v8, row_number() over (partition by src order by dst DESC) as rn from Graph as g4;
+# 2. minView
+create or replace view minView8341870411647392445 as select v6, v8 as mfR6350074669152898227 from orderView4719054212559316021 where rn = 1;
+# 3. joinView
+create or replace view joinView7453348749925255610 as select src as v4, dst as v6, mfR6350074669152898227 from Graph AS g3, minView8341870411647392445 where g3.dst=minView8341870411647392445.v6;
+
+# Reduce2
+# 1. orderView
+create or replace view orderView3055650921355370483 as select v4, v6, mfR6350074669152898227, row_number() over (partition by v4 order by mfR6350074669152898227 DESC) as rn from joinView7453348749925255610;
+# 2. minView
+create or replace view minView7596981769236974541 as select v4, mfR6350074669152898227 as mfR965753732940783303 from orderView3055650921355370483 where rn = 1;
+# 3. joinView
+create or replace view joinView3203754808033397368 as select v2 from joinView633302664269827473 join minView7596981769236974541 using(v4) where mfL8481172505586412300<mfR965753732940783303;
+
+## Enumerate Phase: 
+select count(distinct v11, v10, v12, v2) from joinView3203754808033397368;
+
+# drop view orderView2485709536741431835, minView4276238504734278961, joinView633302664269827473, orderView4719054212559316021, minView8341870411647392445, joinView7453348749925255610, orderView3055650921355370483, minView7596981769236974541, joinView3203754808033397368;

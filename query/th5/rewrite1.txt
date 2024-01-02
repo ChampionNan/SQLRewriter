@@ -1,0 +1,29 @@
+
+##Reduce Phase: 
+
+# Reduce0
+# 0. Prepare
+create or replace view bag13 as select o.custkey as v1, o.orderstatus as v11, o.totalprice as v12, o.orderdate as v13, o.orderpriority as v14, o.clerk as v15, o.shippriority as v16, o.`comment` as v17, o.orderkey as v18, l.partkey as v19, l.suppkey as v20, l.linenumber as v21, l.quantity as v22, l.extendedprice as v23, l.discount as v24, l.tax as v25, l.returnflag as v26, l.linestatus as v27, l.shipdate as v28, l.commitdate as v29, l.receiptdate as v30, l.shipinstruct as v31, l.shipmode as v32, l.`comment` as v33 from orders as o, lineitem as l where o.orderkey=l.orderkey and o.orderkey>=757353600 and o.orderkey<788889600;
+create or replace view bag11 as select c.custkey as v1, c.name as v2, s.suppkey as v20, c.address as v3, s.name as v35, s.address as v36, s.phone as v38, s.acctbal as v39, c.nationkey as v4, s.`comment` as v40, c.phone as v5, c.acctbal as v6, c.mktsegment as v7, c.`comment` as v8 from customer as c, supplier as s where c.nationkey=s.nationkey;
+# +. SemiJoin
+create or replace view semiJoinView8044654136636680447 as select v1, v2, v20, v3, v35, v36, v38, v39, v4, v40, v5, v6, v7, v8 from bag11 where (v20, v1) in (select v20, v1 from bag13);
+
+# Reduce1
+# 0. Prepare
+create or replace view bag12 as select n.nationkey as v4, n.name as v42, n.regionkey as v43, n.`comment` as v44, r.name as v46, r.`comment` as v47 from nation as n, region as r where n.regionkey=r.regionkey and r.name=r.name;
+# +. SemiJoin
+create or replace view semiJoinView3132609191157526214 as select v1, v2, v20, v3, v35, v36, v38, v39, v4, v40, v5, v6, v7, v8 from semiJoinView8044654136636680447 where (v4) in (select v4 from bag12);
+
+## Enumerate Phase: 
+
+# Enumerate0
+# +. SemiEnumerate
+create or replace view semiEnum2704657886605867689 as select v44, v7, v46, v35, v42, v40, v43, v2, v39, v5 from semiJoinView3132609191157526214 join bag12 using(v4);
+
+# Enumerate1
+# +. SemiEnumerate
+create or replace view semiEnum126030246410186372 as select v13, v12, v14, v7, v46, v29, v17, v30, v42, v40, v43, v18, v21, v11, v32, v26, v15, v31 from semiEnum2704657886605867689, bag13;
+# Final result: 
+select v42, (v23 * (1 - v24))*annot as v49 from semiEnum126030246410186372 order by v42 limit 10 ;
+
+# drop view semiEnum126030246410186372, semiEnum2704657886605867689, semiJoinView3132609191157526214, bag12, semiJoinView8044654136636680447, bag11, bag13;

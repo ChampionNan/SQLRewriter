@@ -1,0 +1,23 @@
+## AggReduce Phase: 
+
+# AggReduce0
+# 1. aggView
+create or replace view aggView7293104985183604270 as select custkey as v10, count(*) as annot from customer as customer where mktsegment=mktsegment group by custkey;
+# 2. aggJoin
+create or replace view aggJoin533208045235579253 as select orderkey as v18, custkey as v10, orderstatus as v11, totalprice as v12, orderdate as v13, orderpriority as v14, clerk as v15, shippriority as v16, `comment` as v17, annot from orders as orders, aggView7293104985183604270 where orders.custkey=aggView7293104985183604270.v10 and orderdate<795196800;
+
+# AggReduce1
+# 1. aggView
+create or replace view aggView2445003334395821434 as select v13, v18, v16, sum(annot) as annot from aggJoin533208045235579253 group by v13,v18,v16;
+# 2. aggJoin
+create or replace view aggJoin1447169548212688473 as select v18, v13, v16, annot from aggView2445003334395821434;
+
+# AggReduce2
+# 1. aggView
+create or replace view aggView1551932479730925732 as select orderkey as v18, SUM(extendedprice * (1 - discount)) as v35, count(*) as annot from lineitem as lineitem where shipdate>795196800 group by orderkey;
+# 2. aggJoin
+create or replace view aggJoin8185264916029961196 as select v18, v13, v16, aggJoin1447169548212688473.annot * aggView1551932479730925732.annot as annot, v35 * aggJoin1447169548212688473.annot as v35 from aggJoin1447169548212688473 join aggView1551932479730925732 using(v18);
+# Final result: 
+select v18, v13, v16, v35 from aggJoin8185264916029961196 order by v18, v13, v16 limit 10 ;
+
+# drop view aggJoin8185264916029961196, aggView1551932479730925732, aggJoin1447169548212688473, aggView2445003334395821434, aggJoin533208045235579253, aggView7293104985183604270;

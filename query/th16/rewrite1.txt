@@ -1,0 +1,17 @@
+## AggReduce Phase: 
+
+# AggReduce0
+# 1. aggView
+create or replace view aggView2834439531139498373 as select partkey as v6, COUNT(suppkey) as v15, count(*) as annot from partsupp as ps group by partkey;
+# 2. aggJoin
+create or replace view aggJoin4045926224200305241 as select partkey as v6, name as v7, mfgr as v8, brand as v9, type as v10, size as v11, container as v12, retailprice as v13, `comment` as v14, v15, annot from part as p, aggView2834439531139498373 where p.partkey=aggView2834439531139498373.v6 and brand<>brand and type NOT LIKE 'MEDIUM POLISHED%' and size IN (49,14,23,45,19,3,36,9);
+
+# AggReduce1
+# 1. aggView
+create or replace view aggView4498250219258111760 as select v10, v9, v11, COUNT(v15) as v15, sum(annot) as annot from aggJoin4045926224200305241 group by v10,v9,v11;
+# 2. aggJoin
+create or replace view aggJoin5886563849914249702 as select v9, v10, v11, v15, annot from aggView4498250219258111760;
+# Final result: 
+select v9, v10, v11, v15 from aggJoin5886563849914249702 order by v9, v10, v11 limit 10 ;
+
+# drop view aggJoin5886563849914249702, aggView4498250219258111760, aggJoin4045926224200305241, aggView2834439531139498373;

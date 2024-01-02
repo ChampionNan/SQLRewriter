@@ -1,0 +1,23 @@
+## AggReduce Phase: 
+
+##Reduce Phase: 
+
+# Reduce0
+# 0. Prepare
+create or replace view bag10 as select g2.src as v2, g2.dst as v4, g3.dst as v6, g4.dst as v8 from Graph as g2, Graph as g3, Graph as g4 where g2.dst=g3.src and g3.dst=g4.src;
+create or replace view bag10Aux35 as select v2, v8 from bag10;
+
+# Reduce1
+# 0. Prepare
+create or replace view g5Aux0 as select src as v8, dst as v10 from Graph;
+
+# Reduce2
+# 0. Prepare
+create or replace view g1Aux57 as select dst as v2, src as v1 from Graph;
+# 5. bagAuxView
+create or replace view bag14 as select v2, v8, v1, v10 from bag10Aux35 join g1Aux57 using(v2) join g5Aux0 using(v8) where v1<v10;
+
+## Enumerate Phase: 
+select count(distinct v2, v8) from bag14;
+
+# drop view bag10, bag10Aux35, g5Aux0, g1Aux57, bag14;

@@ -1,0 +1,26 @@
+## AggReduce Phase: 
+
+##Reduce Phase: 
+
+# Reduce0
+# 1. orderView
+create or replace view orderView5004079570212728584 as select T_ID as v1, T_DTS as v2, T_TT_ID as v3, T_S_SYMB as v4, T_CA_ID as v5, T_TRADE_PRICE as v6, 324000000+t1.T_DTS as oriLeft, row_number() over (partition by T_CA_ID, T_S_SYMB order by 324000000+t1.T_DTS DESC) as rn from Trade as t1 where T_TT_ID LIKE '%B%';
+# 2. minView
+create or replace view minView5867921779195346289 as select v5, v4, oriLeft as mfL4936041539482897988 from orderView5004079570212728584 where rn = 1;
+# 3. joinView
+create or replace view joinView4035577043459829335 as select T_ID as v7, T_DTS as v8, T_TT_ID as v9, T_S_SYMB as v4, T_CA_ID as v5, T_TRADE_PRICE as v12, mfL4936041539482897988 from Trade AS t2, minView5867921779195346289 where t2.T_CA_ID=minView5867921779195346289.v5 and t2.T_S_SYMB=minView5867921779195346289.v4 and T_TT_ID LIKE '%S%' and mfL4936041539482897988>=T_DTS;
+
+## Enumerate Phase: 
+
+# Enumerate0
+# 1. createSample
+create or replace view sample4487144581319587695 as select * from orderView5004079570212728584 where rn % 100 = 1;
+# 2. selectMax
+create or replace view maxRn1764186518746367569 as select v5, v4, max(rn) as mrn from joinView4035577043459829335 join sample4487144581319587695 using(v5, v4) where 324000000+v2>=v8 group by v5, v4;
+# 3. selectTarget
+create or replace view target7805004721515723917 as select v1, v2, v3, v4, v5, v6, oriLeft from orderView5004079570212728584 join maxRn1764186518746367569 using(v5, v4) where rn < mrn + 100;
+# 4. stageEnd
+create or replace view end3069951388649990817 as select v12, v6, v7, v1, v2, v3, v4, v9, v5, v8 from joinView4035577043459829335 join target7805004721515723917 using(v5, v4) where 324000000+v2>=v8 and 1.2*v6<v12 and v2<=v8;
+select count(v1, v2, v3, v6, v7, v8, v9, v12, v4, v5) from end3069951388649990817;
+
+# drop view orderView5004079570212728584, minView5867921779195346289, joinView4035577043459829335, sample4487144581319587695, maxRn1764186518746367569, target7805004721515723917, end3069951388649990817;

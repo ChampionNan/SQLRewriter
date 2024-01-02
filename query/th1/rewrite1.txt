@@ -1,0 +1,11 @@
+## AggReduce Phase: 
+
+# AggReduce0
+# 1. aggView
+create or replace view aggView8433703047962461083 as select linestatus as v10, returnflag as v9, SUM(quantity) as v19, SUM(extendedprice) as v20, SUM(extendedprice * (1 - discount)) as v21, SUM((extendedprice * (1 - discount)) * (1 + tax)) as v22, sum(quantity) as v23, sum(extendedprice) as v24, sum(discount) as v25, count(*) as annot from lineitem as lineitem where shipdate<=873043200 group by linestatus,returnflag;
+# 2. aggJoin
+create or replace view aggJoin8843842059541840998 as select v9, v10, v19, v20, v21, v22, v23, v24, v25, annot from aggView8433703047962461083;
+# Final result: 
+select v9, v10, v19, v20, v21, v22, v23/annot as v23, v24/annot as v24, v25/annot as v25, annot as v26 from aggJoin8843842059541840998 order by v9, v10 limit 10 ;
+
+# drop view aggJoin8843842059541840998, aggView8433703047962461083;

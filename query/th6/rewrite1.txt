@@ -1,0 +1,2 @@
+# Final result: 
+select SUM(extendedprice * discount) from lineitem where shipdate>=757353600 and shipdate<788889600 and quantity<24 and discount>=(0.06d - 0.01d) and discount<=(0.06d + 0.01d);

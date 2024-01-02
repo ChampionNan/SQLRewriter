@@ -1,0 +1,17 @@
+## AggReduce Phase: 
+
+# AggReduce0
+# 1. aggView
+create or replace view aggView3738757533394486090 as select orderkey as v10, count(*) as annot from lineitem as l where commitdate<receiptdate group by orderkey;
+# 2. aggJoin
+create or replace view aggJoin5788206815108085574 as select orderkey as v10, custkey as v2, orderstatus as v3, totalprice as v4, orderdate as v5, orderpriority as v6, clerk as v7, shippriority as v8, `comment` as v9, annot from orders as o, aggView3738757533394486090 where o.orderkey=aggView3738757533394486090.v10 and orderdate>=741456000 and orderdate<749404800;
+
+# AggReduce1
+# 1. aggView
+create or replace view aggView2352412010959693181 as select v6, sum(annot) as annot from aggJoin5788206815108085574 group by v6;
+# 2. aggJoin
+create or replace view aggJoin4515926780941943043 as select v6, annot from aggView2352412010959693181;
+# Final result: 
+select v6, annot as v26 from aggJoin4515926780941943043 order by v6 limit 10 ;
+
+# drop view aggJoin4515926780941943043, aggView2352412010959693181, aggJoin5788206815108085574, aggView3738757533394486090;

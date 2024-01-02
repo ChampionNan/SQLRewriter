@@ -1,0 +1,30 @@
+
+##Reduce Phase: 
+
+# Reduce0
+# 0. Prepare
+create or replace view sAux17 as select suppkey as v1, name as v2, address as v3, phone as v5 from supplier;
+# +. SemiJoin
+create or replace view semiJoinView4516421295174097620 as select v1, v2, v3, v5 from sAux17 where (v5, v2, v3, v1) in (select phone, name, address, suppkey from supplier AS s);
+
+# Reduce1
+# +. SemiJoin
+create or replace view semiJoinView2716583855407567645 as select supplier_no as v1, total_revenue as v9 from revenue0 AS revenue0 where (total_revenue) in (select max_tr from q15_inner AS q15_inner);
+
+# Reduce2
+# +. SemiJoin
+create or replace view semiJoinView1379383655435544427 as select v1, v2, v3, v5 from semiJoinView4516421295174097620 where (v1) in (select v1 from semiJoinView2716583855407567645);
+
+## Enumerate Phase: 
+
+# Enumerate0
+# +. SemiEnumerate
+create or replace view semiEnum5445836064752306494 as select v9, v3, v1, v5, v2 from semiJoinView1379383655435544427 join semiJoinView2716583855407567645 using(v1);
+
+# Enumerate1
+# +. SemiEnumerate
+create or replace view semiEnum8536828570555416972 as select v9, v3, v1, v5, v2 from semiEnum5445836064752306494, q15_inner as q15_inner where q15_inner.max_tr=semiEnum5445836064752306494.v9;
+# Final result: 
+select count(distinct v1, v2, v3, v5, v9) from semiEnum8536828570555416972;
+
+# drop view semiEnum8536828570555416972, semiEnum5445836064752306494, semiJoinView1379383655435544427, semiJoinView2716583855407567645, semiJoinView4516421295174097620, sAux17;

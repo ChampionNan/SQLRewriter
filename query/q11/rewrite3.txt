@@ -1,0 +1,48 @@
+## AggReduce Phase: 
+
+##Reduce Phase: 
+
+# Reduce0
+# 0. Prepare
+create or replace view tAux4 as select c as v4, f as v8, e as v7 from T;
+
+# Reduce1
+# 1. orderView
+create or replace view orderView2971083893990029967 as select v4, v8, v7, row_number() over (partition by v4 order by v7) as rn from tAux4;
+# 2. minView
+create or replace view minView1500954422598507455 as select v4, v7 as mfL7660433656501993118 from orderView2971083893990029967 where rn = 1;
+# 3. joinView
+create or replace view joinView7742400628092189317 as select b as v2, c as v4, mfL7660433656501993118 from S AS s, minView1500954422598507455 where s.c=minView1500954422598507455.v4;
+
+# Reduce2
+# 1. orderView
+create or replace view orderView1659003960315606658 as select v2, v4, mfL7660433656501993118, row_number() over (partition by v2 order by mfL7660433656501993118) as rn from joinView7742400628092189317;
+# 2. minView
+create or replace view minView900902198740138891 as select v2, mfL7660433656501993118 as mfL488507447546697255 from orderView1659003960315606658 where rn = 1;
+# 3. joinView
+create or replace view joinView1167262824119966985 as select a as v1, b as v2, mfL488507447546697255 from R AS r, minView900902198740138891 where r.b=minView900902198740138891.v2 and mfL488507447546697255<a;
+
+## Enumerate Phase: 
+
+# Enumerate0
+# 1. createSample
+create or replace view sample4317785476703551744 as select * from orderView1659003960315606658 where rn % 100 = 1;
+# 2. selectMax
+create or replace view maxRn7207713515617407151 as select v2, max(rn) as mrn from joinView1167262824119966985 join sample4317785476703551744 using(v2) where mfL7660433656501993118<v1 group by v2;
+# 3. selectTarget
+create or replace view target130474951292938693 as select v2, v4, mfL7660433656501993118 from orderView1659003960315606658 join maxRn7207713515617407151 using(v2) where rn < mrn + 100;
+# 4. stageEnd
+create or replace view end5284090046065526758 as select v1, v2, v4 from joinView1167262824119966985 join target130474951292938693 using(v2) where mfL7660433656501993118<v1;
+
+# Enumerate1
+# 1. createSample
+create or replace view sample1279175543718933999 as select * from orderView2971083893990029967 where rn % 100 = 1;
+# 2. selectMax
+create or replace view maxRn971686360191523552 as select v4, max(rn) as mrn from end5284090046065526758 join sample1279175543718933999 using(v4) where v7<v1 group by v4;
+# 3. selectTarget
+create or replace view target6768554656077076850 as select v4, v8, v7 from orderView2971083893990029967 join maxRn971686360191523552 using(v4) where rn < mrn + 100;
+# 4. stageEnd
+create or replace view end4578058745397702835 as select v1, v2, v8, v4, v7 from end5284090046065526758 join target6768554656077076850 using(v4) where v7<v1;
+select count(distinct v1, v2, v4, v8) from end4578058745397702835;
+
+# drop view tAux4, orderView2971083893990029967, minView1500954422598507455, joinView7742400628092189317, orderView1659003960315606658, minView900902198740138891, joinView1167262824119966985, sample4317785476703551744, maxRn7207713515617407151, target130474951292938693, end5284090046065526758, sample1279175543718933999, maxRn971686360191523552, target6768554656077076850, end4578058745397702835;

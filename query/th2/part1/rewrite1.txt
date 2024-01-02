@@ -1,0 +1,26 @@
+## AggReduce Phase: 
+
+##Reduce Phase: 
+
+# Reduce0
+# +. SemiJoin
+create or replace view semiJoinView7009200475438587950 as select nationkey as v9, name as v14, regionkey as v15, `comment` as v16 from nation AS n2 where (regionkey) in (select regionkey from region AS r2 where name='EUROPE');
+
+# Reduce1
+# +. SemiJoin
+create or replace view semiJoinView8678453428413587782 as select suppkey as v6, name as v7, address as v8, nationkey as v9, phone as v10, acctbal as v11, `comment` as v12 from supplier AS s2 where (nationkey) in (select v9 from semiJoinView7009200475438587950);
+
+# Reduce2
+# +. SemiJoin
+create or replace view semiJoinView8294988139894870953 as select partkey as v1, suppkey as v6, availqty as v3, supplycost as v4, `comment` as v5 from partsupp AS ps2 where (suppkey) in (select v6 from semiJoinView8678453428413587782);
+
+# Reduce3
+# 0. Prepare
+create or replace view ps2Aux56 as select v1, v4 from semiJoinView8294988139894870953;
+# +. SemiJoin
+create or replace view semiJoinView4646728696382118492 as select v1, v4 from ps2Aux56 where (v1, v4) in (select v1, v4 from semiJoinView8294988139894870953);
+
+## Enumerate Phase: 
+select count(distinct v1, v4) from semiJoinView4646728696382118492;
+
+# drop view semiJoinView7009200475438587950, semiJoinView8678453428413587782, semiJoinView8294988139894870953, ps2Aux56, semiJoinView4646728696382118492;

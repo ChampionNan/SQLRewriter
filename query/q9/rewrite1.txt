@@ -1,0 +1,26 @@
+## AggReduce Phase: 
+
+##Reduce Phase: 
+
+# Reduce1
+# 1. orderView
+create or replace view orderView861504195705595396 as select T_ID as v7, T_DTS as v8, T_TT_ID as v9, T_S_SYMB as v4, T_CA_ID as v5, T_TRADE_PRICE as v12, row_number() over (partition by T_CA_ID, T_S_SYMB order by T_DTS) as rn from Trade as t2 where T_TT_ID LIKE '%S%';
+# 2. minView
+create or replace view minView580801715549753059 as select v5, v4, v8 as mfR7762173911021083589 from orderView861504195705595396 where rn = 1;
+# 3. joinView
+create or replace view joinView866899320685567936 as select T_ID as v1, T_DTS as v2, T_TT_ID as v3, T_S_SYMB as v4, T_CA_ID as v5, T_TRADE_PRICE as v6, mfR7762173911021083589 from Trade AS t1, minView580801715549753059 where t1.T_CA_ID=minView580801715549753059.v5 and t1.T_S_SYMB=minView580801715549753059.v4 and T_TT_ID LIKE '%B%' and 324000000+T_DTS>=mfR7762173911021083589;
+
+## Enumerate Phase: 
+
+# Enumerate1
+# 1. createSample
+create or replace view sample348412511820528833 as select * from orderView861504195705595396 where rn % 100 = 1;
+# 2. selectMax
+create or replace view maxRn6232824965071542238 as select v5, v4, max(rn) as mrn from joinView866899320685567936 join sample348412511820528833 using(v5, v4) where 324000000+v2>=v8 group by v5, v4;
+# 3. selectTarget
+create or replace view target491704080122382301 as select v7, v8, v9, v4, v5, v12 from orderView861504195705595396 join maxRn6232824965071542238 using(v5, v4) where rn < mrn + 100;
+# 4. stageEnd
+create or replace view end9146576509537711845 as select v12, v6, v8, v7, v1, v2, v4, v9, v5, v3 from joinView866899320685567936 join target491704080122382301 using(v5, v4) where 324000000+v2>=v8 and 1.2*v6<v12 and v2<=v8;
+select count(v1, v2, v3, v6, v7, v8, v9, v12, v4, v5) from end9146576509537711845;
+
+# drop view orderView861504195705595396, minView580801715549753059, joinView866899320685567936, sample348412511820528833, maxRn6232824965071542238, target491704080122382301, end9146576509537711845;

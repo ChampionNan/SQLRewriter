@@ -1,0 +1,53 @@
+
+## Reduce Phase: 
+
+## Reduce24
+## 0. leafExtra
+create or replace view S390 as (select src as v2, dst as v5, rating as Z, rating as ZZ from Graph as S);
+## 1. aggMax
+create or replace view SAgg837 as (select v2, max(ZZ) as ZZ from S390 group by v2);
+## 2. joinRes
+create or replace view Rjoin813 as (select src as v1, dst as v2, rating as Z, Graph.rating+SAgg837.ZZ as ZZ from Graph, SAgg837 where Graph.dst=SAgg837.v2);
+
+## Reduce25
+## 0. leafExtra
+create or replace view U92 as (select src as v1, dst as v11, rating as Z, rating as ZZ from Graph as U);
+## 1. aggMax
+create or replace view UAgg419 as (select v1, max(ZZ) as ZZ from U92 group by v1);
+## 2. joinRes
+create or replace view Rjoin55 as (select v1, v2, Rjoin813.Z as Z, Rjoin813.ZZ as ZZ, Rjoin813.ZZ+UAgg419.ZZ as ZZZ from Rjoin813 join UAgg419 using(v1));
+
+## Reduce26
+## 1. aggMax
+create or replace view RAgg800 as (select v1, max(ZZZ) as ZZ from Rjoin55 group by v1);
+## 2. joinRes
+create or replace view Tjoin277 as (select src as v1, dst as v8, rating as Z, Graph.rating+RAgg800.ZZ as ZZ from Graph, RAgg800 where Graph.src=RAgg800.v1 order by ZZ DESC limit 1024);
+
+## Enumerate Phase: 
+
+## Enumerate24
+## 0. aggMax
+create or replace view T538 as (select v1, max(Z) as Z from Tjoin277 group by v1);
+## 1. pruneJoin
+create or replace view R_prune268 as (select v1, v2, Rjoin55.Z as Z, ZZ, ZZZ from Rjoin55 join T538 using(v1) order by T538.Z+Rjoin55.ZZZ DESC limit 1024);
+## 2. joinRes
+create or replace view R_join867 as (select Tjoin277.Z + R_prune268.Z as Z, v2, Tjoin277.Z + R_prune268.ZZ as ZZ, v1, v8 from Tjoin277 join R_prune268 using(v1) order by Tjoin277.Z+R_prune268.ZZZ DESC limit 1024);
+
+## Enumerate25
+## 0. aggMax
+create or replace view R699 as (select v1, max(ZZ) as Z from R_join867 group by v1);
+## 1. pruneJoin
+create or replace view U_prune756 as (select v1, v11, U92.Z as Z, ZZ from U92 join R699 using(v1) order by R699.Z+U92.ZZ DESC limit 1024);
+## 2. joinRes
+create or replace view U_join633 as (select R_join867.Z + U_prune756.Z as Z, v11, v2, v1, v8 from R_join867 join U_prune756 using(v1) order by R_join867.ZZ+U_prune756.ZZ DESC limit 1024);
+
+## Enumerate26
+## 0. aggMax
+create or replace view R4 as (select v2, max(Z) as Z from U_join633 group by v2);
+## 1. pruneJoin
+create or replace view S_prune245 as (select v2, v5, S390.Z as Z, ZZ from S390 join R4 using(v2) order by R4.Z+S390.ZZ DESC limit 1024);
+## 2. joinRes
+create or replace view S_join529 as (select U_join633.Z + S_prune245.Z as Z, v11, v2, v5, v1, v8 from U_join633 join S_prune245 using(v2) order by Z DESC limit 1024);
+select sum(v5+v2+v1+v8+v11+Z) from S_join529;
+
+## drop view S390, SAgg837, Rjoin813, U92, UAgg419, Rjoin55, RAgg800, Tjoin277, T538, R_prune268, R_join867, R699, U_prune756, U_join633, R4, S_prune245, S_join529;

@@ -1,0 +1,29 @@
+## AggReduce Phase: 
+
+# AggReduce0
+# 1. aggView
+create or replace view aggView4651578423211881840 as select dst as v2, count(*) as annot from Graph as g1 group by dst;
+# 2. aggJoin
+create or replace view aggJoin2745906195950478537 as select src as v2, dst as v4, annot from Graph as g2, aggView4651578423211881840 where g2.src=aggView4651578423211881840.v2;
+
+# AggReduce1
+# 1. aggView
+create or replace view aggView8385211155773232860 as select src as v8, count(*) as annot from Graph as g5 group by src;
+# 2. aggJoin
+create or replace view aggJoin1987323639384323727 as select src as v6, dst as v8, annot from Graph as g4, aggView8385211155773232860 where g4.dst=aggView8385211155773232860.v8;
+
+# AggReduce2
+# 1. aggView
+create or replace view aggView4442222396950134969 as select v6, SUM(v8+v6) * annot as v12, sum(annot) as annot from aggJoin1987323639384323727 group by v6;
+# 2. aggJoin
+create or replace view aggJoin8249120723130522521 as select src as v4, dst as v6, v12, annot from Graph as g3, aggView4442222396950134969 where g3.dst=aggView4442222396950134969.v6;
+
+# AggReduce3
+# 1. aggView
+create or replace view aggView4154683914012316430 as select v4, SUM(v12) as v12, sum(annot) as annot from aggJoin8249120723130522521 group by v4;
+# 2. aggJoin
+create or replace view aggJoin5919503591368518522 as select v2, v4, aggJoin2745906195950478537.annot * aggView4154683914012316430.annot as annot, v12 * aggJoin2745906195950478537.annot as v12 from aggJoin2745906195950478537 join aggView4154683914012316430 using(v4);
+# Final result: 
+select v2, v4, v12 from aggJoin5919503591368518522 order by v2, v4 limit 10 ;
+
+# drop view aggView4651578423211881840, aggJoin2745906195950478537, aggView8385211155773232860, aggJoin1987323639384323727, aggView4442222396950134969, aggJoin8249120723130522521, aggView4154683914012316430, aggJoin5919503591368518522;

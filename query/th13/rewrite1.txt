@@ -1,0 +1,17 @@
+## AggReduce Phase: 
+
+# AggReduce2
+# 1. aggView
+create or replace view aggView7469908246315339520 as select custkey as v1, count(*) as annot from customer as c group by custkey;
+# 2. aggJoin
+create or replace view aggJoin2584960402295009903 as select v1, annot from aggView7469908246315339520;
+
+# AggReduce3
+# 1. aggView
+create or replace view aggView2179297489936403839 as select custkey as v1, count(*) as annot from orders as o where `comment` LIKE `comment` group by custkey;
+# 2. aggJoin
+create or replace view aggJoin8632072794783751251 as select v1, aggJoin2584960402295009903.annot * aggView2179297489936403839.annot as annot from aggJoin2584960402295009903 join aggView2179297489936403839 using(v1);
+# Final result: 
+select v1, annot as v18 from aggJoin8632072794783751251 order by v1 limit 10 ;
+
+# drop view aggJoin8632072794783751251, aggView2179297489936403839, aggJoin2584960402295009903, aggView7469908246315339520;

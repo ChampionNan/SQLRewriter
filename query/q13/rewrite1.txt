@@ -1,0 +1,13 @@
+## Reduce Phase: 
+
+# Reduce0
+# 0. Prepare
+create or replace view bag5 as select R.a as v1, R.b as v2, S.c as v4, T.d as v6, T.e as v7, T.f as v8 from R as R, S as S, T as T where R.b=S.b and S.c=T.c;
+create or replace view bag5Aux6 as select v1, v6 from bag5;
+# +. SemiJoin
+create or replace view semiJoinView8079176621617495592 as select v1, v6 from bag5Aux6 where (v1, v6) in (select v1, v6 from bag5);
+
+## Enumerate Phase: 
+select count(distinct v1, v6) from semiJoinView8079176621617495592;
+
+# drop view bag5, bag5Aux6, semiJoinView8079176621617495592;

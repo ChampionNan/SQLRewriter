@@ -1,0 +1,35 @@
+## AggReduce Phase: 
+
+# AggReduce3
+# 1. aggView
+create or replace view aggView1537918839316602340 as select name as v2, custkey as v1, count(*) as annot from customer as c group by name,custkey;
+# 2. aggJoin
+create or replace view aggJoin295371237971932909 as select v1, v2, annot from aggView1537918839316602340;
+
+# AggReduce4
+# 1. aggView
+create or replace view aggView2767789425013173594 as select totalprice as v12, orderkey as v9, custkey as v1, orderdate as v13, count(*) as annot from orders as o where o.orderkey IN (select orderkey from inner) group by totalprice,orderkey,custkey,orderdate;
+# 2. aggJoin
+create or replace view aggJoin6699966306325453280 as select v9, v1, v12, v13, annot from aggView2767789425013173594;
+
+# AggReduce5
+# 1. aggView
+create or replace view aggView625703372521562921 as select orderkey as v9, SUM(quantity) as v34, count(*) as annot from lineitem as l group by orderkey;
+# 2. aggJoin
+create or replace view aggJoin6925692682146065288 as select v9, v1, v12, v13, aggJoin6699966306325453280.annot * aggView625703372521562921.annot as annot, v34 * aggJoin6699966306325453280.annot as v34 from aggJoin6699966306325453280 join aggView625703372521562921 using(v9);
+
+##Reduce Phase: 
+
+# Reduce1
+# +. SemiJoin
+create or replace view semiJoinView1660887660002701484 as select v9, v1, v12, v13, annot, v34 from aggJoin6925692682146065288 where (v1) in (select v1 from aggJoin295371237971932909);
+
+## Enumerate Phase: 
+
+# Enumerate1
+# +. SemiEnumerate
+create or replace view semiEnum332138660543153194 as select v2, v34*aggJoin295371237971932909.annot as v34, v13, v9, semiJoinView1660887660002701484.annot * aggJoin295371237971932909.annot as annot, v12, v1 from semiJoinView1660887660002701484 join aggJoin295371237971932909 using(v1);
+# Final result: 
+select v2, v1, v9, v13, v12, v34 from semiEnum332138660543153194 order by v1, v2, v9, v12, v13 limit 10 ;
+
+# drop view semiEnum332138660543153194, semiJoinView1660887660002701484, aggJoin6925692682146065288, aggView625703372521562921, aggJoin6699966306325453280, aggView2767789425013173594, aggJoin295371237971932909, aggView1537918839316602340;

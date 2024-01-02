@@ -1,0 +1,23 @@
+
+## Reduce Phase: 
+
+## Reduce0
+## 0. leafExtra
+create or replace view R865 as (select src as v1, dst as v2, rating as Z, rating as ZZ from Graph as R);
+## 1. aggMax
+create or replace view RAgg69 as (select v2, max(ZZ) as ZZ from R865 group by v2);
+## 2. joinRes
+create or replace view Sjoin879 as (select src as v2, dst as v5, rating as Z, Graph.rating+RAgg69.ZZ as ZZ from Graph, RAgg69 where Graph.src=RAgg69.v2 order by ZZ DESC limit 1024);
+
+## Enumerate Phase: 
+
+## Enumerate0
+## 0. aggMax
+create or replace view S295 as (select v2, max(Z) as Z from Sjoin879 group by v2);
+## 1. pruneJoin
+create or replace view R_prune766 as (select v1, v2, R865.Z as Z, ZZ from R865 join S295 using(v2) order by S295.Z+R865.ZZ DESC limit 1024);
+## 2. joinRes
+create or replace view R_join462 as (select Sjoin879.Z + R_prune766.Z as Z, v1, v2, v5 from Sjoin879 join R_prune766 using(v2) order by Z DESC limit 1024);
+select sum(v1+v2+v5+Z) from R_join462;
+
+## drop view R865, RAgg69, Sjoin879, S295, R_prune766, R_join462;

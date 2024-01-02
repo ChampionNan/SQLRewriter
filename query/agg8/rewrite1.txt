@@ -1,0 +1,22 @@
+## AggReduce Phase: 
+
+# AggReduce1
+# 1. aggView
+create or replace view aggView937511163442732659 as select dst as v2, count(*) as annot from Graph as g1 group by dst;
+# 2. aggJoin
+create or replace view aggJoin8489879711085084884 as select src as v2, dst as v4, annot from Graph as g2, aggView937511163442732659 where g2.src=aggView937511163442732659.v2;
+
+##Reduce Phase: 
+
+# Reduce1
+# +. SemiJoin
+create or replace view semiJoinView5910814859090221356 as select v2, v4, annot from aggJoin8489879711085084884 where (v4) in (select src from Graph AS g3);
+
+## Enumerate Phase: 
+
+# Enumerate1
+# +. SemiEnumerate
+create or replace view semiEnum2596861799827639983 as select v2, annot, dst as v6, v4 from semiJoinView5910814859090221356, Graph as g3 where g3.src=semiJoinView5910814859090221356.v4;
+select v2, v4, v6, v6*annot as v7, v2*annot as v8 from semiEnum2596861799827639983 order by v2, v4, v6 limit 10 ;
+
+# drop view aggView937511163442732659, aggJoin8489879711085084884, semiJoinView5910814859090221356, semiEnum2596861799827639983;

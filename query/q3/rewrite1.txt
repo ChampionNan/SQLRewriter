@@ -1,0 +1,49 @@
+## AggReduce Phase: 
+
+##Reduce Phase: 
+
+# Reduce4
+# 0. Prepare
+create or replace view g1 as select Graph.src as v7, Graph.dst as v2, v8 from Graph, (SELECT src, COUNT(*) AS v8 FROM Graph GROUP BY src) AS c1 where Graph.src = c1.src;
+create or replace view g2 as select Graph.src as v2, Graph.dst as v4, v12 from Graph, (SELECT src, COUNT(*) AS v12 FROM Graph GROUP BY src) AS c3 where Graph.src = c3.src;
+# 1. orderView
+create or replace view orderView8212797290100737768 as select v7, v2, v8, row_number() over (partition by v2 order by v8) as rn from g1;
+# 2. minView
+create or replace view minView1283229928304692854 as select v2, v8 as mfL1788283185026217447 from orderView8212797290100737768 where rn = 1;
+# 3. joinView
+create or replace view joinView802534320999582187 as select v2, v4, v12, mfL1788283185026217447 from g2 join minView1283229928304692854 using(v2);
+
+# Reduce5
+# 0. Prepare
+create or replace view g3 as select Graph.src as v4, Graph.dst as v9, v10, v14 from Graph, (SELECT src, COUNT(*) AS v10 FROM Graph GROUP BY src) AS c2, (SELECT dst, COUNT(*) AS v14 FROM Graph GROUP BY dst) AS c4 where Graph.dst = c2.src and Graph.dst = c4.dst;
+# 1. orderView
+create or replace view orderView6063919164130671606 as select v2, v4, v12, mfL1788283185026217447, row_number() over (partition by v4 order by mfL1788283185026217447) as rn from joinView802534320999582187;
+# 2. minView
+create or replace view minView6604226751622100721 as select v4, mfL1788283185026217447 as mfL5454070833336564707 from orderView6063919164130671606 where rn = 1;
+# 3. joinView
+create or replace view joinView8075884275760121621 as select v4, v9, v10, v14, mfL5454070833336564707 from g3 join minView6604226751622100721 using(v4) where mfL5454070833336564707<v10;
+
+## Enumerate Phase: 
+
+# Enumerate4
+# 1. createSample
+create or replace view sample7738542571411010307 as select * from orderView6063919164130671606 where rn % 100 = 1;
+# 2. selectMax
+create or replace view maxRn4659921032744198239 as select v4, max(rn) as mrn from joinView8075884275760121621 join sample7738542571411010307 using(v4) where mfL1788283185026217447<v10 group by v4;
+# 3. selectTarget
+create or replace view target3742059256984922346 as select v2, v4, v12, mfL1788283185026217447 from orderView6063919164130671606 join maxRn4659921032744198239 using(v4) where rn < mrn + 100;
+# 4. stageEnd
+create or replace view end1678450610808977904 as select v4, v12, v2, v10, v14, v9 from joinView8075884275760121621 join target3742059256984922346 using(v4) where mfL1788283185026217447<v10 and v12<v14;
+
+# Enumerate5
+# 1. createSample
+create or replace view sample1926769114183657512 as select * from orderView8212797290100737768 where rn % 100 = 1;
+# 2. selectMax
+create or replace view maxRn6877551895789654518 as select v2, max(rn) as mrn from end1678450610808977904 join sample1926769114183657512 using(v2) where v8<v10 group by v2;
+# 3. selectTarget
+create or replace view target2175241684892050762 as select v7, v2, v8 from orderView8212797290100737768 join maxRn6877551895789654518 using(v2) where rn < mrn + 100;
+# 4. stageEnd
+create or replace view end3984107829017174421 as select v4, v8, v12, v2, v10, v7, v14, v9 from end1678450610808977904 join target2175241684892050762 using(v2) where v8<v10;
+select count(v7, v2, v4, v9, v8, v10, v12, v14) from end3984107829017174421;
+
+# drop view g1, g2, orderView8212797290100737768, minView1283229928304692854, joinView802534320999582187, g3, orderView6063919164130671606, minView6604226751622100721, joinView8075884275760121621, sample7738542571411010307, maxRn4659921032744198239, target3742059256984922346, end1678450610808977904, sample1926769114183657512, maxRn6877551895789654518, target2175241684892050762, end3984107829017174421;

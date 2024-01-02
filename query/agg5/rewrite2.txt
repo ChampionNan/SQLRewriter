@@ -1,0 +1,22 @@
+## Reduce Phase: 
+
+# Reduce0
+# +. SemiJoin
+create or replace view semiJoinView4347333112475090560 as select src as v2, dst as v4 from Graph AS g2 where (src) in (select dst from Graph AS g1);
+
+# Reduce1
+# +. SemiJoin
+create or replace view semiJoinView5516155646068177090 as select src as v4, dst as v6 from Graph AS g3 where (src) in (select v4 from semiJoinView4347333112475090560);
+
+# Reduce2
+# +. SemiJoin
+create or replace view semiJoinView8934741165398118164 as select v4, v6 from semiJoinView5516155646068177090 where (v6) in (select src from Graph AS g4);
+
+# Reduce3
+# +. SemiJoin
+create or replace view semiJoinView8472892616109387540 as select v4, v6 from semiJoinView8934741165398118164 where () in (select  from Graph AS g5);
+
+## Enumerate Phase: 
+
+# Enumerate0
+# +. SemiEnumerate

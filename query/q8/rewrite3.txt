@@ -1,0 +1,32 @@
+## AggReduce Phase: 
+
+##Reduce Phase: 
+
+# Reduce3
+# +. SemiJoin
+create or replace view semiJoinView5220865707429914868 as select src as v4, dst as v6 from Graph AS g3 where (dst) in (select src from Graph AS g4) and src<dst;
+
+# Reduce4
+# +. SemiJoin
+create or replace view semiJoinView2373286821743143750 as select src as v2, dst as v4 from Graph AS g2 where (dst) in (select v4 from semiJoinView5220865707429914868) and src<dst;
+
+# Reduce5
+# +. SemiJoin
+create or replace view semiJoinView5832551794819088576 as select src as v1, dst as v2 from Graph AS g1 where (dst) in (select v2 from semiJoinView2373286821743143750);
+
+## Enumerate Phase: 
+
+# Enumerate3
+# +. SemiEnumerate
+create or replace view semiEnum993741983909789509 as select v1, v2, v4 from semiJoinView5832551794819088576 join semiJoinView2373286821743143750 using(v2);
+
+# Enumerate4
+# +. SemiEnumerate
+create or replace view semiEnum6543809333413511516 as select v2, v1, v4, v6 from semiEnum993741983909789509 join semiJoinView5220865707429914868 using(v4);
+
+# Enumerate5
+# +. SemiEnumerate
+create or replace view semiEnum159026983088829030 as select dst as v8, v1, v2, v4, v6 from semiEnum6543809333413511516, Graph as g4 where g4.src=semiEnum6543809333413511516.v6;
+select count(v1, v2, v4, v6, v8) from semiEnum159026983088829030;
+
+# drop view semiJoinView5220865707429914868, semiJoinView2373286821743143750, semiJoinView5832551794819088576, semiEnum993741983909789509, semiEnum6543809333413511516, semiEnum159026983088829030;

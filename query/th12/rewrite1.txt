@@ -1,0 +1,17 @@
+## AggReduce Phase: 
+
+# AggReduce0
+# 1. aggView
+create or replace view aggView2387394357325026195 as select orderkey as v1, SUM(CASE WHEN (orderpriority IN ('1-URGENT','2-HIGH')) THEN 1 ELSE 0 END) as v28, SUM(CASE WHEN (orderpriority NOT IN ('1-URGENT','2-HIGH')) THEN 1 ELSE 0 END) as v29, count(*) as annot from orders as o group by orderkey;
+# 2. aggJoin
+create or replace view aggJoin1705358299835736363 as select orderkey as v1, partkey as v11, suppkey as v12, linenumber as v13, quantity as v14, extendedprice as v15, discount as v16, tax as v17, returnflag as v18, linestatus as v19, shipdate as v20, commitdate as v21, receiptdate as v22, shipinstruct as v23, shipmode as v24, `comment` as v25, v28, v29, annot from lineitem as l, aggView2387394357325026195 where l.orderkey=aggView2387394357325026195.v1 and receiptdate<788889600 and shipmode IN ('MAIL','SHIP') and commitdate<receiptdate and shipdate<commitdate and receiptdate>=757353600;
+
+# AggReduce1
+# 1. aggView
+create or replace view aggView7369021089076534310 as select v24, SUM(v28) as v28, SUM(v29) as v29, sum(annot) as annot from aggJoin1705358299835736363 group by v24;
+# 2. aggJoin
+create or replace view aggJoin6160978451287830438 as select v24, v28, v29, annot from aggView7369021089076534310;
+# Final result: 
+select v24, v28, v29 from aggJoin6160978451287830438 order by v24 limit 10 ;
+
+# drop view aggJoin6160978451287830438, aggView7369021089076534310, aggJoin1705358299835736363, aggView2387394357325026195;

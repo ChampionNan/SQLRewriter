@@ -1,0 +1,25 @@
+
+# Reduce Phase: 
+
+## Reduce0
+create or replace view R_max1476 as (select dst as v2, max(rating) as max_accweight from Graph group by dst);
+create or replace view S6487 as (select src as v2, dst as v5, rating as rating, rating + max_accweight as accweight from Graph, R_max1476 where Graph.src = R_max1476.v2 order by accweight DESC limit 1024);
+
+# Enumerate Phase: 
+
+## Enumerate0
+## 0. rankView
+create or replace view S6487_max7418 as (select v2, max(rating) as max_weight from S6487 group by v2);
+create table R_truncated5536 as (select src as v1, dst as v2, rating, rating as accweight from S6487_max7418, Graph where S6487_max7418.v2=Graph.dst order by max_weight + accweight DESC limit 1024);
+create or replace view R_rnk6768 as (select v1, v2, rating, accweight, row_number() over (partition by v2 order by accweight DESC) as rnk from R_truncated5536);
+## 1. logkLoop
+create or replace view levelk_right_05336 as (select * from R_rnk6768 where rnk<=32);
+create or replace view levelk_join_05920 as (select v2, v1, v5, levelk_right_05336.rnk as rnk, S6487.rating as left_weight, S6487.rating+levelk_right_05336.rating as rating, S6487.rating+levelk_right_05336.accweight as accweight from S6487 join levelk_right_05336 using(v2) order by accweight DESC limit 1024);
+create or replace view levelk_left_12083 as (select v2, v5, left_weight as rating from levelk_join_05920 where rnk=32);
+create or replace view levelk_right_11660 as (select * from R_rnk6768 where rnk>32 and rnk<=1024);
+create or replace view levelk_join_15805 as (select v2, v1, v5, levelk_right_11660.rnk as rnk, levelk_left_12083.rating as left_weight, levelk_left_12083.rating+levelk_right_11660.rating as rating, levelk_left_12083.rating+levelk_right_11660.accweight as accweight from levelk_left_12083 join levelk_right_11660 using(v2) union all select * from levelk_join_05920 order by accweight DESC limit 1024);
+create or replace view R_acc6432 as (select v2, v1, v5, rating from levelk_join_15805);
+select sum(v1+v2+v5+rating) from R_acc6432;
+
+# drop view R_acc6432, levelk_join_15805, levelk_right_11660, levelk_left_12083, levelk_join_05920, levelk_right_05336, R_rnk6768, S6487_max7418, S6487, R_max1476;
+## drop table R_truncated5536;
