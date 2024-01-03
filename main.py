@@ -18,6 +18,7 @@ from codegenTopK import *
 from random import randint
 import os
 import re
+import time
 import traceback
 
 GET_TREE = 'sparksql-plus-cli-jar-with-dependencies.jar'
@@ -31,6 +32,7 @@ AGG_NAME = 'aggregations.txt'
 TOPK_NAME = 'topK.txt'
 JT_PATH = ''
 OUT_PATH = 'outputVariables.txt'
+PARSE_TIME = -1
 AddiRelationNames = set(['TableAggRelation', 'AuxiliaryRelation', 'BagRelation']) #5, 5, 6
 
 
@@ -41,8 +43,12 @@ Only AuxiliaryRelation source is [Bag(Graph,Graph)|Graph|...]
 
 def get_tree():
     cmdline = f'java -jar {GET_TREE} -d {BASE_PATH}{DDL_NAME} -o {BASE_PATH} {BASE_PATH}{QUERY_NAME}'
-    out = os.popen(cmdline, mode='r').readlines()
-
+    out = os.popen(cmdline, mode='r').read()
+    print('Parse time extra time(ms): ' + out + '\n')
+    pattern = re.compile(r'\d+')
+    ptime = pattern.findall(out)[0]
+    global PARSE_TIME
+    PARSE_TIME = int(ptime) * 1.0 / 1000
 
 def parse_ddl():
     try:
@@ -154,7 +160,7 @@ def parse_topk() -> list[int, int, list[str], bool, int, GenType]:
     f = open(BASE_PATH + TOPK_NAME)
     line = f.readline().rstrip()
     # 0: levelk, 1: productk
-    TopK = 0
+    TopK = 1
     base = 32
     orderBy = ''    # use rating as default
     DESC, limit = line.split(',')[1:]
@@ -374,6 +380,7 @@ def parse_jt(isFull: bool, table2vars: dict[str, str]):
 
 
 if __name__ == '__main__':
+    start = time.time()
     path_ddl = ''
     table2vars = parse_ddl()
     outputVariables, isFull = parse_outVar()
@@ -424,3 +431,7 @@ if __name__ == '__main__':
             except Exception as e:
                 traceback.print_exc()
                 print("Error JT: " + name)
+    end = time.time()
+    if PARSE_TIME != -1:
+        end -= PARSE_TIME
+    print('Rewrite total time(s): ' + str(end-start) + '\n')

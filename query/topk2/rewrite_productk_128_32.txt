@@ -1,0 +1,13 @@
+with
+T25 as (select src as v5, dst as v8, rating as Z, rating as ZZ from Graph as T), 
+TAgg477 as (select v5, max(ZZ) as ZZ from T25 group by v5), 
+Sjoin531 as (select src as v2, dst as v5, rating as Z, Graph.rating+TAgg477.ZZ as ZZ from Graph, TAgg477 where Graph.dst=TAgg477.v5), 
+SAgg729 as (select v2, max(ZZ) as ZZ from Sjoin531 group by v2), 
+Rjoin593 as (select src as v1, dst as v2, rating as Z, Graph.rating+SAgg729.ZZ as ZZ from Graph, SAgg729 where Graph.dst=SAgg729.v2 order by ZZ DESC limit 128), 
+R13 as (select v2, max(Z) as Z from Rjoin593 group by v2), 
+S_prune771 as (select v2, v5, Sjoin531.Z as Z, ZZ from Sjoin531 join R13 using(v2) order by R13.Z+Sjoin531.ZZ DESC limit 128), 
+S_join937 as (select v2, v5, v1, Rjoin593.Z + S_prune771.Z as Z from Rjoin593 join S_prune771 using(v2) order by Rjoin593.Z+S_prune771.ZZ DESC limit 128), 
+S837 as (select v5, max(Z) as Z from S_join937 group by v5), 
+T_prune34 as (select v5, v8, T25.Z as Z, ZZ from T25 join S837 using(v5) order by S837.Z+T25.ZZ DESC limit 128), 
+T_join888 as (select v2, v1, v5, v8, S_join937.Z + T_prune34.Z as Z from S_join937 join T_prune34 using(v5) order by Z DESC limit 128)
+select sum(v1+v2+v5+v8+Z) from T_join888;

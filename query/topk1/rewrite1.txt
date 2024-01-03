@@ -1,0 +1,8 @@
+with
+S191 as (select src as v2, dst as v5, rating as Z, rating as ZZ from Graph as S), 
+SAgg872 as (select v2, max(ZZ) as ZZ from S191 group by v2), 
+Rjoin930 as (select src as v1, dst as v2, rating as Z, Graph.rating+SAgg872.ZZ as ZZ from Graph, SAgg872 where Graph.dst=SAgg872.v2 order by ZZ DESC limit 128), 
+R384 as (select v2, max(Z) as Z from Rjoin930 group by v2), 
+S_prune360 as (select v2, v5, S191.Z as Z, ZZ from S191 join R384 using(v2) order by R384.Z+S191.ZZ DESC limit 128), 
+S_join847 as (select v1, v2, Rjoin930.Z + S_prune360.Z as Z, v5 from Rjoin930 join S_prune360 using(v2) order by Z DESC limit 128)
+select sum(v1+v2+v5+Z) from S_join847;
